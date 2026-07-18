@@ -232,6 +232,7 @@ def export_validation_bundle(
         json.dumps(report.model_dump(mode="json"), ensure_ascii=False, indent=2, sort_keys=True)
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
     def sha256(path: Path) -> str:
@@ -257,6 +258,7 @@ def export_validation_bundle(
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     return manifest
 

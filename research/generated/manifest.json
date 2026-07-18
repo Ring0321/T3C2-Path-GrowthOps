@@ -6,8 +6,8 @@
       "sha256": "fb9e9cf55db2f9f4e86d5390a490f900e4daecc517c155d8e97522b0c15f22f3"
     },
     "validation_report.json": {
-      "bytes": 1119,
-      "sha256": "ee13e430e1abaf3a5be1695cb67357f7b56a2fe72558a3365cb576dc73bd3481"
+      "bytes": 1087,
+      "sha256": "eea72509ccf8b72859b6f21c9998ba79aede2154e2b03bf4389eab0782f27cf4"
     }
   },
   "generator": "t3c2_path.research.export_validation_bundle",
