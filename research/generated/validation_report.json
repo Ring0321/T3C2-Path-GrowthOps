@@ -1,0 +1,32 @@
+{
+  "aipw_absolute_bias": 0.3947821803995719,
+  "aipw_estimate": 2.5999633091907763,
+  "aipw_interval_high": 3.103523676055408,
+  "aipw_interval_low": 2.0964029423261445,
+  "analyzed_n": 1143,
+  "claim_boundary": {
+    "allowed_claim_en": "The implementation recovered the injected synthetic effect under this generator.",
+    "prohibited_claim_zh": "不得据此宣称算法已对真实学生有效或华图服务产生真实因果效果。"
+  },
+  "dataset_hash": "sha256:c6afd070688394eb13412ae3bf65706f5f55e2882317ddf245e383aedf8c2642",
+  "expected_property": {
+    "aipw_closer_than_naive": true,
+    "known_truth_available": true,
+    "truth_inside_aipw_interval": true
+  },
+  "generated_n": 1200,
+  "naive_absolute_bias": 4.299633718970066,
+  "naive_difference": 7.294379208560414,
+  "observed": {
+    "aipw_estimate": 2.5999633091907763,
+    "analyzed_n": 1143,
+    "assigned_n": 620,
+    "crossover_n": 108,
+    "generated_n": 1200
+  },
+  "propensity_max": 0.8807651763984905,
+  "propensity_min": 0.1358763284441103,
+  "research_boundary": "synthetic_only_not_real_world_evidence",
+  "seed": 20260719,
+  "true_ate": 2.9947454895903483
+}

@@ -1,0 +1,17 @@
+{
+  "dataset_hash": "sha256:c6afd070688394eb13412ae3bf65706f5f55e2882317ddf245e383aedf8c2642",
+  "files": {
+    "synthetic_known_truth.csv": {
+      "bytes": 260087,
+      "sha256": "5ecb4e3f91735ff10b9de1fbe7b20284642ccdc408bb22f42b2a2dcc527570b2"
+    },
+    "validation_report.json": {
+      "bytes": 1178,
+      "sha256": "d42101b02fcd733325be00b51f810f613d9e952fb15310f56b50c9eb67f64c60"
+    }
+  },
+  "generator": "t3c2_path.research.export_validation_bundle",
+  "research_boundary": "synthetic_only_not_real_world_evidence",
+  "rows": 1200,
+  "seed": 20260719
+}
