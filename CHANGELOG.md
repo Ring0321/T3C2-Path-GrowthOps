@@ -15,3 +15,5 @@ All notable changes are documented here. The project follows Semantic Versioning
 - Algorithm D formative VA with measurement-invariance, reference-sample and interval-width stop rules.
 - Algorithm E randomized ITT and AIPW service-effect estimators with target-trial, intervention-version and positivity checks.
 - Algorithm F calibration, risk-coverage, group error/coverage/burden audits and selective publication gates.
+- Capability-bounded evidence, path, task, governance, explanation and audit agents.
+- Deterministic decision orchestrator, tamper-evident audit chain, synthetic CLI and versioned REST endpoint.

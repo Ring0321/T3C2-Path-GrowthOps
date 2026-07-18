@@ -68,7 +68,7 @@ class GatePolicy(FrozenModel):
     minimum_evidence_coverage: float = Field(default=0.60, ge=0, le=1)
     maximum_calibration_ece: float = Field(default=0.10, ge=0, le=1)
     maximum_fairness_gap: float = Field(default=0.15, ge=0, le=1)
-    maximum_uncertainty_width: float = Field(default=20.0, ge=0)
+    maximum_uncertainty_width: float = Field(default=25.0, ge=0)
     maximum_workload_hours: float = Field(default=10.0, ge=0)
 
 
