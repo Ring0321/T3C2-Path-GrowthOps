@@ -16,11 +16,29 @@ def test_synthetic_generator_is_reproducible_and_explicitly_marked() -> None:
     assert first == second
     assert all(item.is_synthetic for item in first)
     assert all(item.subject_id.startswith("SYN-") for item in first)
+    assert all(
+        len(str(value).partition(".")[2]) <= 10
+        for item in first
+        for value in (
+            item.baseline_readiness,
+            item.motivation,
+            item.resource_access,
+            item.propensity,
+            item.expected_y0,
+            item.expected_y1,
+            item.y0,
+            item.y1,
+        )
+    )
 
 
 def test_aipw_is_checked_against_known_truth_and_naive_bias() -> None:
     report = run_known_truth_validation(n=1_200, seed=20260719)
     assert report.research_boundary == "synthetic_only_not_real_world_evidence"
+    assert (
+        report.dataset_hash
+        == "sha256:c53c305540b1292551ccf136c9834b90b29a3468656386528755add05d33eb99"
+    )
     assert abs(report.aipw_estimate - report.true_ate) < 0.5
     assert abs(report.aipw_estimate - report.true_ate) < abs(
         report.naive_difference - report.true_ate

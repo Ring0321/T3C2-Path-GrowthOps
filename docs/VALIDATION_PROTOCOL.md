@@ -49,6 +49,8 @@ Evaluate measurement invariance, temporal calibration, institutional transportab
 
 ## 4. Reproduction
 
+All continuous generator fields are canonicalized to ten decimal places and CSV uses LF line endings. This does not imply ten-decimal measurement accuracy. It isolates meaningful algorithm changes from last-bit differences in operating-system math libraries and text serialization, so every supported Python/platform combination can verify the same logical and file hashes.
+
 ```bash
 python -m pip install -e ".[dev,api,research]"
 pytest --cov=t3c2_path --cov-report=term-missing
