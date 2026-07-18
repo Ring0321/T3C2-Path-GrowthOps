@@ -5,7 +5,6 @@ import pytest
 from t3c2_path.algorithms.evidence_state import EvidenceStateEstimator
 from t3c2_path.domain import EvidenceRecord, EvidenceStatus, SourceKind
 
-
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

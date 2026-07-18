@@ -92,7 +92,13 @@ def calibration_metrics(
         raise ValueError("outcomes must be binary")
 
     n = len(probabilities)
-    brier = sum((probability - int(outcome)) ** 2 for probability, outcome in zip(probabilities, outcomes, strict=True)) / n
+    brier = (
+        sum(
+            (probability - int(outcome)) ** 2
+            for probability, outcome in zip(probabilities, outcomes, strict=True)
+        )
+        / n
+    )
     grouped: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
     for probability, outcome in zip(probabilities, outcomes, strict=True):
         index = min(int(probability * bins), bins - 1)

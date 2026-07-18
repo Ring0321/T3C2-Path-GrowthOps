@@ -6,7 +6,6 @@ from pydantic import Field
 
 from t3c2_path.domain import FrozenModel
 
-
 Score = float
 
 
@@ -92,27 +91,33 @@ def rank_tasks(
             reasons.append("ACTION_NOT_REVERSIBLE")
         if candidate.is_high_stakes:
             reasons.append("HIGH_STAKES_REQUIRES_HUMAN")
-        if candidate.is_paid_service and candidate.information_gain < policy.paid_minimum_information:
+        if (
+            candidate.is_paid_service
+            and candidate.information_gain < policy.paid_minimum_information
+        ):
             reasons.append("PAID_ACTION_LOW_INFORMATION")
         if candidate.is_paid_service and _dominant_lower_cost_action(candidate, candidates):
             reasons.append("LOWER_COST_INFORMATION_DOMINATES")
         raw_value = _raw_value(candidate, policy)
-        passed = not reasons
+        passed_gate = not reasons
         decisions.append(
             TaskDecision(
                 task_id=candidate.task_id,
-                gate="PASS" if passed else "BLOCK",
+                gate="PASS" if passed_gate else "BLOCK",
                 raw_value=raw_value,
-                publishable_value=raw_value if passed else None,
+                publishable_value=raw_value if passed_gate else None,
                 reason_codes=tuple(reasons) if reasons else ("SAFE_BASELINE_PASSED",),
             )
         )
 
-    passed = sorted(
+    passed_decisions = sorted(
         (item for item in decisions if item.gate == "PASS"),
         key=lambda item: (-item.raw_value, item.task_id),
     )
-    ranked_passed = [item.model_copy(update={"rank": rank}) for rank, item in enumerate(passed, 1)]
+    ranked_passed = [
+        item.model_copy(update={"rank": rank})
+        for rank, item in enumerate(passed_decisions, 1)
+    ]
     blocked = sorted(
         (item for item in decisions if item.gate == "BLOCK"),
         key=lambda item: (-item.raw_value, item.task_id),

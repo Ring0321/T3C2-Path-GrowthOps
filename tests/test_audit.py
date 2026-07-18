@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 
 from t3c2_path.audit import AppendOnlyAuditStore, AuditEvent
 
-
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

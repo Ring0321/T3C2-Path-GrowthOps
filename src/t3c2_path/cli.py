@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from t3c2_path.application import GrowthOpsOrchestrator
 from t3c2_path.audit import AppendOnlyAuditStore
 from t3c2_path.demo import demo_request
-
 
 RESEARCH_BOUNDARY = "synthetic_only_not_real_world_evidence"
 

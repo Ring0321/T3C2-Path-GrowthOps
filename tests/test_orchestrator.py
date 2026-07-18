@@ -20,7 +20,6 @@ from t3c2_path.domain import (
     SourceKind,
 )
 
-
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Upgrade packaging toolchain
+        run: python -m pip install --upgrade pip
+      - name: Install project and quality tools
+        run: python -m pip install -e ".[dev,api,research]" build pip-audit
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: mypy src
+      - name: Tests and coverage
+        run: pytest --cov=t3c2_path --cov-report=term-missing --cov-fail-under=85 -q
+      - name: Reproduce synthetic validation bundle
+        run: |
+          python scripts/export_validation_bundle.py
+          git diff --exit-code -- research/generated
+      - name: CLI smoke test
+        run: python -m t3c2_path demo --output outputs/demo-result.json
+      - name: Build distributions
+        if: matrix.python-version == '3.13'
+        run: python -m build
+      - name: Dependency vulnerability audit
+        if: matrix.python-version == '3.13'
+        run: python -m pip_audit

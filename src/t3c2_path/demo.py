@@ -15,7 +15,6 @@ from t3c2_path.domain import (
     SourceKind,
 )
 
-
 DEMO_TIME = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

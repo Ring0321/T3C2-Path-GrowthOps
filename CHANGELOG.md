@@ -17,3 +17,5 @@ All notable changes are documented here. The project follows Semantic Versioning
 - Algorithm F calibration, risk-coverage, group error/coverage/burden audits and selective publication gates.
 - Capability-bounded evidence, path, task, governance, explanation and audit agents.
 - Deterministic decision orchestrator, tamper-evident audit chain, synthetic CLI and versioned REST endpoint.
+- Reproducible 1,200-row known-truth cohort, estimator report, integrity manifest and 12-case red-team registry.
+- Model card, data card, claim register, validation protocol, threat model and GitHub quality/security automation.

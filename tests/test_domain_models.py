@@ -9,9 +9,9 @@ from t3c2_path.domain import (
     ConsentRecord,
     DecisionPurpose,
     DisputeRecord,
+    EventEnvelope,
     EvidenceRecord,
     EvidenceStatus,
-    EventEnvelope,
     KnowledgeRule,
     PathNode,
     PathPlan,
@@ -25,7 +25,6 @@ from t3c2_path.domain import (
     StudentValueAddedReport,
     TaskCard,
 )
-
 
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 

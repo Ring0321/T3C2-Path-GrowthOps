@@ -1,0 +1,29 @@
+name: Research claim change
+description: Propose a change to an estimand, threshold, claim boundary or validation rule.
+title: "[Claim]: "
+labels: [research]
+body:
+  - type: input
+    id: claim
+    attributes:
+      label: Claim ID or algorithm module
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting and opposing evidence
+    validations:
+      required: true
+  - type: textarea
+    id: falsification
+    attributes:
+      label: Falsifiable acceptance and failure rule
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Allowed and prohibited language after the change
+    validations:
+      required: true

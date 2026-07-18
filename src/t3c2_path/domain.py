@@ -13,7 +13,6 @@ from typing import Annotated
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
-
 Identifier = Annotated[str, Field(min_length=1, max_length=160)]
 NonEmptyText = Annotated[str, Field(min_length=1, max_length=4_000)]
 Probability = Annotated[float, Field(ge=0.0, le=1.0)]
@@ -343,9 +342,9 @@ __all__ = [
     "ConsentRecord",
     "DecisionPurpose",
     "DisputeRecord",
+    "EventEnvelope",
     "EvidenceRecord",
     "EvidenceStatus",
-    "EventEnvelope",
     "KnowledgeRule",
     "PathNode",
     "PathPlan",

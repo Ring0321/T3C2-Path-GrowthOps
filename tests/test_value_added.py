@@ -5,7 +5,6 @@ import pytest
 from t3c2_path.algorithms.value_added import VARequest, estimate_student_value_added
 from t3c2_path.domain import ClaimLevel, PublicationAction
 
-
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

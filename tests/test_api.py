@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from t3c2_path.api import app
 from t3c2_path.demo import demo_request
 
-
 client = TestClient(app)
 
 

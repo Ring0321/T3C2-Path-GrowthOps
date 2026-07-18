@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 from t3c2_path.application import DecisionRequest, GrowthOpsOrchestrator
 from t3c2_path.audit import AppendOnlyAuditStore
 
-
 app = FastAPI(
     title="T3-C2 Path GrowthOps",
     version="0.1.0",

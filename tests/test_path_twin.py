@@ -8,7 +8,6 @@ from t3c2_path.algorithms.path_twin import (
 )
 from t3c2_path.domain import KnowledgeRule, PathStatus
 
-
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 
 

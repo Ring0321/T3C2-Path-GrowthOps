@@ -12,7 +12,6 @@ from pydantic import AwareDatetime, Field
 
 from t3c2_path.domain import FrozenModel
 
-
 ZERO_HASH = "sha256:" + "0" * 64
 
 
