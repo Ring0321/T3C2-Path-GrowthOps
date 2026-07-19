@@ -19,11 +19,15 @@ from pydantic import Field
 
 from t3c2_path.algorithms.service_effect import (
     CausalObservation,
+    MissingOutcomeStrategy,
+    StudyDesign,
     TargetTrialSpec,
+    TreatmentVariable,
     estimate_aipw,
 )
 from t3c2_path.audit import canonical_hash
 from t3c2_path.domain import FrozenModel
+from t3c2_path.red_team import export_red_team_results
 
 VALIDATION_TIME = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
 RESEARCH_BOUNDARY = "synthetic_only_not_real_world_evidence"
@@ -160,6 +164,10 @@ def run_known_truth_validation(
         has_comparator=True,
         stable_intervention=True,
         minimum_overlap=0.05,
+        study_design=StudyDesign.QUASI_EXPERIMENTAL,
+        treatment_variable=TreatmentVariable.ASSIGNMENT,
+        exchangeability_supported=True,
+        missing_outcome_strategy=MissingOutcomeStrategy.COMPLETE_CASE,
         is_synthetic=True,
     )
     aipw = estimate_aipw(trial, records, created_at=VALIDATION_TIME)
@@ -222,6 +230,7 @@ def export_validation_bundle(
     csv_path = output_dir / "synthetic_known_truth.csv"
     report_path = output_dir / "validation_report.json"
     manifest_path = output_dir / "manifest.json"
+    red_team_path = output_dir / "red_team_results.json"
 
     fieldnames = list(cohort[0].model_dump(mode="json"))
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
@@ -234,12 +243,13 @@ def export_validation_bundle(
         encoding="utf-8",
         newline="\n",
     )
+    export_red_team_results(red_team_path)
 
     def sha256(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
     manifest: dict[str, object] = {
-        "generator": "t3c2_path.research.export_validation_bundle",
+        "generator": "open-source-reference/0.2.0",
         "seed": seed,
         "rows": n,
         "dataset_hash": report.dataset_hash,
@@ -252,6 +262,10 @@ def export_validation_bundle(
             report_path.name: {
                 "sha256": sha256(report_path),
                 "bytes": report_path.stat().st_size,
+            },
+            red_team_path.name: {
+                "sha256": sha256(red_team_path),
+                "bytes": red_team_path.stat().st_size,
             },
         },
     }

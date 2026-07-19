@@ -62,6 +62,7 @@ class PublicationCandidate(FrozenModel):
     uncertainty_width: float = Field(ge=0)
     student_workload_hours: float = Field(ge=0)
     is_high_stakes: bool
+    context_conflict: bool = False
 
 
 class GatePolicy(FrozenModel):
@@ -216,6 +217,9 @@ def evaluate_publication(
     if candidate.purpose is DecisionPurpose.HIGH_STAKES or candidate.is_high_stakes:
         reasons.append("HIGH_STAKES_REQUIRES_HUMAN")
         actions.append("CREATE_HUMAN_REVIEW_TICKET")
+    if candidate.context_conflict:
+        reasons.append("CONTEXT_CONFLICT_REQUIRES_DISCRIMINATING_EVIDENCE")
+        actions.append("PRESERVE_CONTEXTS_AND_RUN_DISCRIMINATING_TASK")
     if not candidate.rules_valid:
         reasons.append("KNOWLEDGE_RULE_INVALID")
         actions.append("VERIFY_KNOWLEDGE_RULES")

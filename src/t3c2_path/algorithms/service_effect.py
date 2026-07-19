@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from enum import StrEnum
 
 from pydantic import AwareDatetime, Field
 
@@ -14,6 +15,23 @@ from t3c2_path.domain import (
 )
 
 
+class StudyDesign(StrEnum):
+    RANDOMIZED = "RANDOMIZED"
+    QUASI_EXPERIMENTAL = "QUASI_EXPERIMENTAL"
+    OBSERVATIONAL = "OBSERVATIONAL"
+
+
+class TreatmentVariable(StrEnum):
+    ASSIGNMENT = "ASSIGNMENT"
+    RECEIVED_SERVICE = "RECEIVED_SERVICE"
+
+
+class MissingOutcomeStrategy(StrEnum):
+    UNADDRESSED = "UNADDRESSED"
+    COMPLETE_CASE = "COMPLETE_CASE"
+    EXTERNALLY_ADJUSTED = "EXTERNALLY_ADJUSTED"
+
+
 class TargetTrialSpec(FrozenModel):
     trial_id: str = Field(min_length=1)
     population_definition: str = Field(min_length=1)
@@ -23,6 +41,10 @@ class TargetTrialSpec(FrozenModel):
     has_comparator: bool
     stable_intervention: bool
     minimum_overlap: float = Field(gt=0, lt=0.5)
+    study_design: StudyDesign
+    treatment_variable: TreatmentVariable
+    exchangeability_supported: bool
+    missing_outcome_strategy: MissingOutcomeStrategy
     is_synthetic: bool
 
 
@@ -38,6 +60,8 @@ class CausalObservation(FrozenModel):
     eligible: bool
     observed: bool
     is_synthetic: bool
+    exposure_at: AwareDatetime | None = None
+    outcome_at: AwareDatetime | None = None
 
 
 class EffectEstimationResult(FrozenModel):
@@ -66,6 +90,20 @@ def _preconditions(
     versions = {item.strategy_version for item in records}
     if versions != {trial.strategy_version}:
         reasons.append("MIXED_INTERVENTION_VERSIONS")
+    if any(
+        item.exposure_at is not None
+        and item.outcome_at is not None
+        and item.exposure_at >= item.outcome_at
+        for item in records
+        if item.eligible
+    ):
+        reasons.append("EXPOSURE_NOT_BEFORE_OUTCOME")
+    missing_outcomes = any(item.eligible and not item.observed for item in records)
+    if (
+        missing_outcomes
+        and trial.missing_outcome_strategy is MissingOutcomeStrategy.UNADDRESSED
+    ):
+        reasons.append("OUTCOME_MISSINGNESS_UNADDRESSED")
     return tuple(reasons)
 
 
@@ -74,6 +112,15 @@ def _claim_level(
 ) -> ClaimLevel:
     if trial.is_synthetic and all(item.is_synthetic for item in records):
         return ClaimLevel.SYNTHETIC_ONLY
+    if trial.study_design is StudyDesign.OBSERVATIONAL:
+        return ClaimLevel.ASSOCIATIONAL
+    if (
+        trial.study_design is StudyDesign.QUASI_EXPERIMENTAL
+        and not trial.exchangeability_supported
+    ):
+        return ClaimLevel.ASSOCIATIONAL
+    if trial.missing_outcome_strategy is MissingOutcomeStrategy.COMPLETE_CASE:
+        return ClaimLevel.ASSOCIATIONAL
     return ClaimLevel.CAUSAL_GROUP
 
 
@@ -83,7 +130,11 @@ def estimate_randomized_itt(
     *,
     created_at: AwareDatetime,
 ) -> EffectEstimationResult:
-    failures = _preconditions(trial, records)
+    failures = list(_preconditions(trial, records))
+    if trial.study_design is not StudyDesign.RANDOMIZED:
+        failures.append("ITT_REQUIRES_RANDOMIZED_ASSIGNMENT")
+    if trial.treatment_variable is not TreatmentVariable.ASSIGNMENT:
+        failures.append("ITT_REQUIRES_ASSIGNMENT_VARIABLE")
     eligible = tuple(item for item in records if item.eligible and item.observed)
     treated = [item.outcome for item in eligible if item.assigned]
     control = [item.outcome for item in eligible if not item.assigned]
@@ -92,7 +143,7 @@ def estimate_randomized_itt(
             action=PublicationAction.DEFER,
             report=None,
             analyzed_n=len(eligible),
-            reason_codes=failures,
+            reason_codes=tuple(dict.fromkeys(failures)),
         )
     if len(treated) < 2 or len(control) < 2:
         return EffectEstimationResult(
@@ -139,6 +190,11 @@ def estimate_aipw(
     created_at: AwareDatetime,
 ) -> EffectEstimationResult:
     failures = list(_preconditions(trial, records))
+    if (
+        trial.study_design is StudyDesign.OBSERVATIONAL
+        and trial.treatment_variable is not TreatmentVariable.RECEIVED_SERVICE
+    ):
+        failures.append("OBSERVATIONAL_AIPW_REQUIRES_SERVICE_RECEIPT")
     eligible = tuple(item for item in records if item.eligible and item.observed)
     if len(eligible) < 2:
         failures.append("INSUFFICIENT_ANALYSIS_SAMPLE")
@@ -159,7 +215,11 @@ def estimate_aipw(
 
     pseudo_outcomes: list[float] = []
     for item in eligible:
-        treatment = 1.0 if item.assigned else 0.0
+        treatment = 1.0 if (
+            item.assigned
+            if trial.treatment_variable is TreatmentVariable.ASSIGNMENT
+            else item.received_service
+        ) else 0.0
         pseudo_outcomes.append(
             item.expected_outcome_service
             - item.expected_outcome_no_service
@@ -187,19 +247,25 @@ def estimate_aipw(
         created_at=created_at,
         is_synthetic=claim_level is ClaimLevel.SYNTHETIC_ONLY,
     )
+    reasons = ["AIPW_ESTIMATE_WITH_OVERLAP_DIAGNOSTICS"]
+    if not trial.exchangeability_supported:
+        reasons.append("EXCHANGEABILITY_NOT_ESTABLISHED_NO_CAUSAL_CLAIM")
     return EffectEstimationResult(
         action=PublicationAction.QUALIFIED,
         report=report,
         standard_error=standard_error,
         analyzed_n=len(eligible),
-        reason_codes=("AIPW_ESTIMATE_WITH_OVERLAP_DIAGNOSTICS",),
+        reason_codes=tuple(reasons),
     )
 
 
 __all__ = [
     "CausalObservation",
     "EffectEstimationResult",
+    "MissingOutcomeStrategy",
+    "StudyDesign",
     "TargetTrialSpec",
+    "TreatmentVariable",
     "estimate_aipw",
     "estimate_randomized_itt",
 ]

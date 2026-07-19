@@ -13,6 +13,7 @@ T³-C² Path GrowthOps 是一个面向大学生全周期成长规划的开源研
 
 - **T³ 三时钟**：分别管理证据时效、路径时间窗和服务暴露时间，防止过期证据、失效规则与逆向因果混在一个“更新时间”里。
 - **C² 双反事实**：把学生相对自身起点的成长增值 `VA` 与指定服务策略的群体效益 `SE` 分开，禁止用“学生进步了”证明“企业服务导致进步”。
+- **Path 时序数字孪生**：把主路径、辅路径和备选路径建成带依赖、硬时窗、可迁移资产、切换与回退历史的状态机；适配度与准备度分开记录。
 - **Path 安全行动实验**：以 Safe-VOI 选择低成本、可退出、能产生新信息的下一步行动；安全门不可被高分抵消。
 - **选择性发布**：证据不足、规则过期、无授权、群体风险或高利害场景触发降级、拒答或人工会商。
 
@@ -62,6 +63,8 @@ python scripts/export_validation_bundle.py
 ```
 
 已知真值队列固定种子为 `20260719`，1200 条合成记录中真实 ATE 为 `2.995`，朴素组间差为 `7.294`，AIPW 为 `2.600`，95% 区间 `[2.096, 3.104]`。这验证了在生成器假设和已知 nuisance 值下，代码能够识别明显选择偏差；它不证明真实服务有效。完整结果与文件哈希见 [research/generated/validation_report.json](research/generated/validation_report.json) 和 [research/generated/manifest.json](research/generated/manifest.json)。
+
+提交材料中的 Word/Excel 另含 `document-design-fixture/1.0.0` 五折交叉拟合演练。它与仓库的 `open-source-reference/0.2.0` 使用不同的数据生成过程，因此数值不作横向比较；二者的角色、哈希、允许与禁止解释均冻结在 [research/submission_release_manifest.json](research/submission_release_manifest.json)。R01—R12 红队状态由可执行测试导出，不接受手工把“待执行”改成“通过”。
 
 ## 接口
 

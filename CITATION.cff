@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this research software, please cite it using this metadata."
 title: "T3-C2 Path GrowthOps: Evidence-aware student growth planning and value-added evaluation"
 type: software
-version: 0.1.0
+version: 0.2.0
 date-released: 2026-07-19
 license: Apache-2.0
 repository-code: "https://github.com/Ring0321/T3C2-Path-GrowthOps"
@@ -12,4 +12,3 @@ keywords:
   - value-added evaluation
   - causal inference
   - multi-agent systems
-

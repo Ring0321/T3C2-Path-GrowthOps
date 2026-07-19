@@ -314,6 +314,17 @@ class ReviewTicket(FrozenModel):
     is_synthetic: bool = False
 
 
+class HumanOverrideRecord(FrozenModel):
+    override_id: Identifier
+    decision_id: Identifier
+    reviewer_id: Identifier
+    original_action: PublicationAction
+    override_action: PublicationAction
+    reason_codes: tuple[Identifier, ...] = Field(min_length=1)
+    occurred_at: AwareDatetime
+    is_synthetic: bool = False
+
+
 class DisputeRecord(FrozenModel):
     dispute_id: Identifier
     subject_id: Identifier
@@ -345,6 +356,7 @@ __all__ = [
     "EventEnvelope",
     "EvidenceRecord",
     "EvidenceStatus",
+    "HumanOverrideRecord",
     "KnowledgeRule",
     "PathNode",
     "PathPlan",

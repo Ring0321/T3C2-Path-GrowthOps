@@ -43,6 +43,8 @@ A distribution of path readiness and stage feasibility under current evidence, c
 
 Each path contains requirement thresholds, normalized dimension weights, critical-margin rules, workload, transferability, window length and referenced hard-rule IDs. Monte Carlo draws propagate evidence-state uncertainty. Each draw calculates weighted shortfall and whether critical dimensions meet the safety margin. Non-dominated alternatives are retained across readiness, feasibility, transferability and workload.
 
+The temporal twin is a separate state machine. Each primary, secondary or backup path is a directed acyclic graph of nodes with dependencies, hard deadlines, required transferable assets and reversible completion events. Fit expresses person-path preference compatibility; readiness expresses current preparation. They are stored and reported separately. Switching preserves transferable assets and appends a versioned event; rollback restores the prior active path without deleting completed evidence.
+
 ### 3.3 Hard boundary
 
 A missing, expired or not-yet-valid hard rule changes the path to `NEEDS_VERIFICATION`; feasibility probability and risk index become `None`. No soft score can offset this state. This is the main architectural difference from a conventional weighted recommendation.
@@ -89,6 +91,8 @@ VA = observed readiness - expected readiness
 
 Observed and expected standard errors are propagated. The result is qualified only when measurement invariance is established, the reference sample reaches the minimum and the interval is narrow enough for individual interpretation. Synthetic inputs produce `SYNTHETIC_ONLY`; real research inputs cannot exceed `FORMATIVE` at the individual level.
 
+A Boolean assertion is not measurement evidence. Publication additionally requires a typed invariance assessment (method, grouping dimensions, assessment time and specification stability), an explicit temporal train/evaluation split, and a frozen reference-model specification. Missing any element causes `DEFER` with a machine-readable reason.
+
 ### 5.2 Prohibited use
 
 VA cannot rank students, determine eligibility, punish a low starting point or represent enterprise contribution. A wide interval means “uncertain,” not “no growth.” Model-specification sign changes stop individual reporting.
@@ -102,6 +106,8 @@ Use cross-fitted reference predictions, report reference population and temporal
 ### 6.1 Target-trial contract
 
 Before estimation, define eligibility, time zero, assigned strategies, comparator, intervention version, follow-up, outcome, estimand and missing-data rule. Randomized wait-list evaluation uses assignment-based ITT even when actual use crosses over. Observational AIPW uses supplied out-of-fold propensity and outcome predictions.
+
+The estimator contract explicitly records study design and treatment variable. Randomized ITT requires assignment. Observational AIPW requires actual service receipt. Exposure must precede outcome, unaddressed missing outcomes stop estimation, and observational output cannot exceed `ASSOCIATIONAL` even when overlap is adequate. A quasi-experimental causal claim additionally requires recorded identification support and stable intervention/missingness handling.
 
 ### 6.2 AIPW pseudo-outcome
 

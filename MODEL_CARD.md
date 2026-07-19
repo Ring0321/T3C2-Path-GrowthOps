@@ -1,4 +1,4 @@
-# Model card — T³-C² Path GrowthOps 0.1.0
+# Model card — T³-C² Path GrowthOps 0.2.0
 
 ## 1. System identity
 
@@ -6,7 +6,7 @@
 - **Status:** research alpha; synthetic-only reference implementation.
 - **Release date:** 2026-07-19.
 - **Owner:** repository maintainers.
-- **No trained foundation model:** v0.1.0 does not ship learned weights or call an external LLM.
+- **No trained foundation model:** v0.2.0 does not ship learned weights or call an external LLM.
 
 ## 2. Intended use
 
@@ -28,15 +28,17 @@ Permitted prototype uses include synthetic demonstrations, algorithm property te
 | Module | Output | Main uncertainty | Stop condition |
 |---|---|---|---|
 | A Evidence state | posterior and interval by dimension/context | reliability, age, duplicate origin | invalid authorization or unresolved conflict |
-| B Path twin | readiness distribution and Pareto set | state and rule uncertainty | missing/expired hard rule |
+| B Path twin | fit/readiness separation, temporal graph, switch/rollback history and Pareto set | state, deadline and rule uncertainty | missing/expired hard rule or overdue node |
 | C Safe-VOI | gated reversible task order | expected information and burden | unsafe, high-stakes or dominated paid action |
-| D Student VA | observed-minus-expected with interval | measurement and reference model | non-invariance, small reference, wide interval |
-| E Service SE | randomized ITT or AIPW group estimate | allocation, confounding, positivity, attrition | no comparator, mixed version or non-overlap |
+| D Student VA | observed-minus-expected with interval | measurement and frozen temporal reference model | absent invariance evidence, missing time split, small reference or wide interval |
+| E Service SE | randomized ITT or treatment-semantic AIPW group estimate | allocation, treatment definition, confounding, positivity, attrition | no comparator, mixed version, unaddressed missingness, reverse timing or non-overlap |
 | F Safety gate | publish/defer/review/block | calibration, fairness, coverage, workload | any gate failure |
 
 ## 5. Evaluation evidence
 
 The automated suite covers schema contracts, time semantics, evidence updates, path rules, Pareto filtering, Safe-VOI dominance, VA uncertainty, randomized ITT, AIPW, calibration, risk–coverage, fairness burden, agent permissions, API contracts, audit tampering and export reproducibility.
+
+Release 0.2.0 adds an executable path state machine, context-preserving orchestration, explicit study-design/treatment/missingness semantics, and twelve executable red-team cases. The submission release manifest maps the public reference generator and the separate Word/Excel design fixture. Their point estimates are not compared because the data-generating processes differ; only within-generator known-truth properties are admissible.
 
 For seed `20260719`, the 1200-row synthetic generator injected an average effect of `2.9947`. The unadjusted treated-control difference was `7.2944`; AIPW was `2.6000` with interval `[2.0964, 3.1035]`. AIPW absolute bias was `0.3948`, versus `4.2996` for the naive estimator. These values are a code validation under an explicitly favorable generator with known nuisance functions, not performance estimates for real students.
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "t3c2-path-growthops"
-version = "0.1.0"
+version = "0.2.0"
 description = "A research-grade, safety-gated GrowthOps engine for evidence-aware student development planning."
 readme = "README.md"
 requires-python = ">=3.11"

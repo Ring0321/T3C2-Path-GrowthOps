@@ -4,7 +4,10 @@ import pytest
 
 from t3c2_path.algorithms.service_effect import (
     CausalObservation,
+    MissingOutcomeStrategy,
+    StudyDesign,
     TargetTrialSpec,
+    TreatmentVariable,
     estimate_aipw,
     estimate_randomized_itt,
 )
@@ -23,6 +26,10 @@ def trial(**overrides: object) -> TargetTrialSpec:
         "has_comparator": True,
         "stable_intervention": True,
         "minimum_overlap": 0.05,
+        "study_design": StudyDesign.RANDOMIZED,
+        "treatment_variable": TreatmentVariable.ASSIGNMENT,
+        "exchangeability_supported": True,
+        "missing_outcome_strategy": MissingOutcomeStrategy.UNADDRESSED,
         "is_synthetic": True,
     }
     data.update(overrides)
@@ -125,3 +132,77 @@ def test_target_trial_preconditions_are_executable(
     assert result.action is PublicationAction.DEFER
     assert result.report is None
     assert reason in result.reason_codes
+
+
+def test_observational_aipw_uses_received_service_and_cannot_auto_upgrade_to_causal() -> None:
+    records = (
+        observation("a", True, 50.0, received_service=False, m0=50.0, m1=53.0),
+        observation("b", False, 53.0, received_service=True, m0=50.0, m1=53.0),
+    )
+    result = estimate_aipw(
+        trial(
+            study_design=StudyDesign.OBSERVATIONAL,
+            treatment_variable=TreatmentVariable.RECEIVED_SERVICE,
+            estimand="observational_AE",
+            exchangeability_supported=False,
+        ),
+        records,
+        created_at=NOW,
+    )
+    assert result.report is not None
+    assert result.report.estimate == pytest.approx(3.0)
+    assert result.report.claim_level is ClaimLevel.SYNTHETIC_ONLY
+    assert "EXCHANGEABILITY_NOT_ESTABLISHED_NO_CAUSAL_CLAIM" in result.reason_codes
+
+
+def test_real_observational_aipw_is_associational_even_with_overlap() -> None:
+    records = tuple(
+        observation(f"s{i}", i % 2 == 0, 53.0 if i % 2 == 0 else 50.0).model_copy(
+            update={"is_synthetic": False}
+        )
+        for i in range(20)
+    )
+    result = estimate_aipw(
+        trial(
+            is_synthetic=False,
+            study_design=StudyDesign.OBSERVATIONAL,
+            treatment_variable=TreatmentVariable.RECEIVED_SERVICE,
+            exchangeability_supported=False,
+        ),
+        records,
+        created_at=NOW,
+    )
+    assert result.report is not None
+    assert result.report.claim_level is ClaimLevel.ASSOCIATIONAL
+
+
+def test_missing_outcomes_without_a_declared_strategy_force_defer() -> None:
+    records = (
+        observation("a", True, 53.0),
+        observation("b", False, 50.0),
+        observation("missing", True, 0.0).model_copy(update={"observed": False}),
+    )
+    result = estimate_randomized_itt(trial(), records, created_at=NOW)
+    assert result.action is PublicationAction.DEFER
+    assert "OUTCOME_MISSINGNESS_UNADDRESSED" in result.reason_codes
+
+
+def test_exposure_after_outcome_is_excluded_from_effect_estimation() -> None:
+    records = (
+        observation("a", True, 53.0).model_copy(
+            update={"exposure_at": NOW, "outcome_at": NOW}
+        ),
+        observation("b", False, 50.0).model_copy(
+            update={"exposure_at": NOW, "outcome_at": NOW}
+        ),
+    )
+    result = estimate_aipw(
+        trial(
+            study_design=StudyDesign.OBSERVATIONAL,
+            treatment_variable=TreatmentVariable.RECEIVED_SERVICE,
+        ),
+        records,
+        created_at=NOW,
+    )
+    assert result.action is PublicationAction.DEFER
+    assert "EXPOSURE_NOT_BEFORE_OUTCOME" in result.reason_codes

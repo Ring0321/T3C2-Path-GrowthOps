@@ -3,8 +3,17 @@ from datetime import UTC, datetime, timedelta
 from t3c2_path.algorithms.path_twin import (
     LatentDimension,
     PathDefinition,
+    PathGraphDefinition,
+    PathNodeDefinition,
+    PathRole,
+    PathTwinNodeStatus,
+    advance_path_twin,
+    initialize_path_twin,
     pareto_front,
+    refresh_path_twin,
+    rollback_path_twin,
     simulate_paths,
+    switch_path_twin,
 )
 from t3c2_path.domain import KnowledgeRule, PathStatus
 
@@ -84,3 +93,78 @@ def test_pareto_front_keeps_tradeoffs_and_removes_dominated_options() -> None:
         )
     )
     assert front == frozenset({"balanced", "lower-burden"})
+
+
+def graph(
+    path_id: str, role: PathRole, *, fit: float, deadline_days: int = 30
+) -> PathGraphDefinition:
+    return PathGraphDefinition(
+        path_id=path_id,
+        role=role,
+        fit_score=fit,
+        nodes=(
+            PathNodeDefinition(
+                node_id=f"{path_id}:explore",
+                title="minimum action experiment",
+                due_at=NOW + timedelta(days=deadline_days),
+                produces_asset_ids=("portfolio-evidence",),
+                is_reversible=True,
+            ),
+            PathNodeDefinition(
+                node_id=f"{path_id}:commit",
+                title="bounded commitment",
+                due_at=NOW + timedelta(days=deadline_days + 30),
+                dependency_node_ids=(f"{path_id}:explore",),
+                required_asset_ids=("portfolio-evidence",),
+                is_reversible=True,
+            ),
+        ),
+    )
+
+
+def test_path_twin_executes_dependencies_deadlines_switch_and_rollback() -> None:
+    primary = graph("market", PathRole.PRIMARY, fit=82)
+    backup = graph("exam", PathRole.BACKUP, fit=74)
+    state = initialize_path_twin(
+        (primary, backup),
+        readiness_by_path={"market": 61.0, "exam": 48.0},
+        as_of=NOW,
+    )
+    assert state.fit_by_path["market"] == 82
+    assert state.readiness_by_path["market"] == 61
+    assert state.node_statuses["market:commit"] is PathTwinNodeStatus.LOCKED
+
+    completed = advance_path_twin(
+        state,
+        path_id="market",
+        node_id="market:explore",
+        occurred_at=NOW + timedelta(days=1),
+    )
+    assert "portfolio-evidence" in completed.acquired_asset_ids
+    assert completed.node_statuses["market:commit"] is PathTwinNodeStatus.AVAILABLE
+
+    switched = switch_path_twin(
+        completed,
+        to_path_id="exam",
+        occurred_at=NOW + timedelta(days=2),
+        reason="new preference evidence",
+    )
+    assert switched.active_path_id == "exam"
+    assert "portfolio-evidence" in switched.acquired_asset_ids
+    rolled_back = rollback_path_twin(
+        switched,
+        occurred_at=NOW + timedelta(days=3),
+        reason="exam rule window changed",
+    )
+    assert rolled_back.active_path_id == "market"
+    assert [item.event_type for item in rolled_back.history][-2:] == ["SWITCHED", "ROLLED_BACK"]
+
+
+def test_path_twin_blocks_overdue_nodes_instead_of_treating_time_as_a_soft_score() -> None:
+    overdue = graph("overdue", PathRole.PRIMARY, fit=80, deadline_days=-1)
+    state = initialize_path_twin(
+        (overdue,), readiness_by_path={"overdue": 90.0}, as_of=NOW
+    )
+    refreshed = refresh_path_twin(state, as_of=NOW)
+    assert refreshed.node_statuses["overdue:explore"] is PathTwinNodeStatus.BLOCKED
+    assert "DEADLINE_EXPIRED" in refreshed.reason_codes

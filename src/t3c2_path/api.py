@@ -14,7 +14,7 @@ from t3c2_path.audit import AppendOnlyAuditStore
 
 app = FastAPI(
     title="T3-C2 Path GrowthOps",
-    version="0.1.0",
+    version="0.2.0",
     description="Synthetic-only research API; not a production student decision service.",
 )
 _audit_store = AppendOnlyAuditStore()
@@ -50,7 +50,7 @@ async def validation_error_handler(_request: Any, exc: RequestValidationError) -
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "version": "0.1.0", "data_mode": "synthetic_only"}
+    return {"status": "ok", "version": "0.2.0", "data_mode": "synthetic_only"}
 
 
 @app.post("/v1/decisions/evaluate")

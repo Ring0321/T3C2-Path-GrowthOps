@@ -14,6 +14,14 @@ from t3c2_path.domain import (
 )
 
 
+class MeasurementInvarianceAssessment(FrozenModel):
+    method: str = Field(min_length=1)
+    grouping_dimensions: tuple[str, ...] = Field(min_length=1)
+    established: bool
+    specification_stable: bool
+    assessed_at: AwareDatetime
+
+
 class VARequest(FrozenModel):
     report_id: str = Field(min_length=1)
     subject_id: str = Field(min_length=1)
@@ -24,11 +32,12 @@ class VARequest(FrozenModel):
     reference_definition: str = Field(min_length=1)
     reference_sample_size: int = Field(ge=0)
     measurement_invariant: bool
+    measurement_assessment: MeasurementInvarianceAssessment | None = None
+    reference_time_split: str | None = Field(default=None, min_length=1)
+    model_specification_frozen: bool = False
     model_version: str = Field(min_length=1)
     created_at: AwareDatetime
     is_synthetic: bool
-
-
 class VAResult(FrozenModel):
     action: PublicationAction
     report: StudentValueAddedReport | None
@@ -52,6 +61,17 @@ def estimate_student_value_added(
     reasons: list[str] = []
     if not request.measurement_invariant:
         reasons.append("MEASUREMENT_INVARIANCE_NOT_ESTABLISHED")
+    if request.measurement_assessment is None:
+        reasons.append("MEASUREMENT_INVARIANCE_EVIDENCE_MISSING")
+    else:
+        if not request.measurement_assessment.established:
+            reasons.append("MEASUREMENT_INVARIANCE_NOT_ESTABLISHED")
+        if not request.measurement_assessment.specification_stable:
+            reasons.append("MEASUREMENT_INVARIANCE_SPECIFICATION_UNSTABLE")
+    if request.reference_time_split is None:
+        reasons.append("REFERENCE_TIME_SPLIT_MISSING")
+    if not request.model_specification_frozen:
+        reasons.append("REFERENCE_MODEL_SPECIFICATION_NOT_FROZEN")
     if request.reference_sample_size < minimum_reference_sample:
         reasons.append("REFERENCE_SAMPLE_TOO_SMALL")
     if reasons:
@@ -94,4 +114,9 @@ def estimate_student_value_added(
     )
 
 
-__all__ = ["VARequest", "VAResult", "estimate_student_value_added"]
+__all__ = [
+    "MeasurementInvarianceAssessment",
+    "VARequest",
+    "VAResult",
+    "estimate_student_value_added",
+]

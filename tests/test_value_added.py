@@ -2,7 +2,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from t3c2_path.algorithms.value_added import VARequest, estimate_student_value_added
+from t3c2_path.algorithms.value_added import (
+    MeasurementInvarianceAssessment,
+    VARequest,
+    estimate_student_value_added,
+)
 from t3c2_path.domain import ClaimLevel, PublicationAction
 
 NOW = datetime(2026, 7, 19, 8, 0, tzinfo=UTC)
@@ -19,6 +23,15 @@ def request(**overrides: object) -> VARequest:
         "reference_definition": "same stage, track and baseline band",
         "reference_sample_size": 120,
         "measurement_invariant": True,
+        "measurement_assessment": MeasurementInvarianceAssessment(
+            method="longitudinal multi-group CFA",
+            grouping_dimensions=("stage", "track"),
+            established=True,
+            specification_stable=True,
+            assessed_at=NOW,
+        ),
+        "reference_time_split": "train<=2026-06; evaluate=2026-07",
+        "model_specification_frozen": True,
         "model_version": "va/0.1.0",
         "created_at": NOW,
         "is_synthetic": True,
@@ -66,3 +79,18 @@ def test_real_data_request_never_escalates_va_to_service_causality() -> None:
     result = estimate_student_value_added(request(is_synthetic=False))
     assert result.report is not None
     assert result.report.claim_level is ClaimLevel.FORMATIVE
+
+
+def test_boolean_invariance_flag_alone_is_not_sufficient_evidence() -> None:
+    result = estimate_student_value_added(request(measurement_assessment=None))
+    assert result.action is PublicationAction.DEFER
+    assert "MEASUREMENT_INVARIANCE_EVIDENCE_MISSING" in result.reason_codes
+
+
+def test_va_requires_time_split_and_frozen_reference_specification() -> None:
+    result = estimate_student_value_added(
+        request(reference_time_split=None, model_specification_frozen=False)
+    )
+    assert result.action is PublicationAction.DEFER
+    assert "REFERENCE_TIME_SPLIT_MISSING" in result.reason_codes
+    assert "REFERENCE_MODEL_SPECIFICATION_NOT_FROZEN" in result.reason_codes

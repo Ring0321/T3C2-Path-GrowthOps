@@ -19,7 +19,7 @@ Maturity is fixed at this release: six claims have medium support, two have init
 
 ## Allowed release statement
 
-“v0.1.0 is a tested, synthetic-only reference implementation of the T³-C² coupling and its failure gates.”
+“v0.2.0 is a tested, synthetic-only reference implementation of the T³-C² coupling, temporal path state machine, causal-claim gates and executable failure boundaries.”
 
 ## Prohibited release statement
 

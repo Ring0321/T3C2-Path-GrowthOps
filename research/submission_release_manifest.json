@@ -1,0 +1,38 @@
+{
+  "release_version": "1.1.0",
+  "released_at": "2026-07-19T08:00:00+00:00",
+  "canonical_reproducibility_generator": "open-source-reference/0.2.0",
+  "comparison_rule": "DO_NOT_COMPARE_NUMERIC_ESTIMATES_ACROSS_DGP",
+  "generators": {
+    "open-source-reference/0.2.0": {
+      "role": "canonical executable conformance generator in the public repository",
+      "data_generating_process": "portable standard-library synthetic cohort with supplied nuisance truth",
+      "seed": 20260719,
+      "generated_n": 1200,
+      "analyzed_n": 1143,
+      "dataset_hash": "sha256:c53c305540b1292551ccf136c9834b90b29a3468656386528755add05d33eb99",
+      "true_ate": 2.9947454896,
+      "aipw_estimate": 2.5999633092,
+      "aipw_interval_low": 2.0964029423,
+      "aipw_interval_high": 3.103523676,
+      "claim_boundary": "synthetic implementation conformance only"
+    },
+    "document-design-fixture/1.0.0": {
+      "role": "algorithm-design fixture embedded in the Word and Excel submission materials",
+      "data_generating_process": "NumPy and scikit-learn five-fold cross-fit rehearsal with a different cohort mechanism",
+      "seed": 20260719,
+      "generated_n": 1200,
+      "dataset_file_sha256": "6c5b82f723620fb9af8ecac4c3d99fc5b779d15cfca9d85555abfa173d57e58b",
+      "true_ate": 3.0534166667,
+      "aipw_estimate": 3.2595279688,
+      "aipw_interval_low": 2.7868711866,
+      "aipw_interval_high": 3.732184751,
+      "claim_boundary": "synthetic design rehearsal only; not the public repository conformance value"
+    }
+  },
+  "interpretation": {
+    "allowed": "Each generator may be checked against its own injected truth and preregistered properties.",
+    "prohibited": "The two point estimates must not be treated as replications of one numerical effect or evidence of real service effectiveness.",
+    "reason": "They use different data-generating processes, covariates, treatment semantics and nuisance-model pipelines."
+  }
+}

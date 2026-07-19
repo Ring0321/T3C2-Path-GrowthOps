@@ -1,4 +1,4 @@
-# Specification: T³-C² Path GrowthOps v0.1.0
+# Specification: T³-C² Path GrowthOps v0.2.0
 
 ## 1. Objective
 
@@ -6,7 +6,7 @@
 
 ## 2. Assumptions
 
-1. v0.1.0 只处理合成或去标识化研究数据，不接入真实个人信息、华图内部系统或飞书生产租户。
+1. v0.2.0 只处理合成或去标识化研究数据，不接入真实个人信息、华图内部系统或飞书生产租户。
 2. Python 3.11+ 是算法与服务端基线；Pydantic 用于边界验证，FastAPI 作为可选 REST 适配层。
 3. 透明、确定性算法优先；大模型只允许在受控结构化结果之上生成解释草稿，不得修改数值、规则或因果等级。
 4. MVP 的 VA 是形成性估计；SE 只在群体级、识别条件满足时允许因果措辞。
@@ -137,9 +137,8 @@ def evaluate(candidate: CandidateDecision, policy: GatePolicy) -> GateResult:
 5. CI 在 Python 3.11—3.13 上运行 lint、type check、tests、coverage、build 和 security audit。
 6. 公开仓库包含许可证、贡献指南、行为准则、安全策略、模型卡、数据卡、变更日志和引用信息。
 
-## 10. Non-goals for v0.1.0
+## 10. Non-goals for v0.2.0
 
 - 不训练端到端强化学习策略，不实现真实推荐商业转化，不提供录取概率。
 - 不声称算法优于顾问、通用大模型或竞品，除非真实预注册研究支持。
 - 不实现生产认证、数据库、多租户、消息队列或飞书凭证集成。
-

@@ -22,7 +22,7 @@ The code passes this fixed exercise when AIPW absolute bias is below `0.5`, lowe
 
 ### 2.3 L1b — red-team boundaries
 
-The 12-case registry attacks consent withdrawal, subject crossover, rule expiry, unknown values, high-stakes automation, commercial inducement, intervention-version mixing, positivity, group disparity, prompt-like source text, audit tampering and causal-language upgrade. Each new incident becomes a permanent regression case.
+The executable R01-R12 suite attacks prompt injection, duplicate evidence, rule expiry, consent withdrawal, agent overreach, unknown rules, context conflict, sparse-group fairness, commercial inducement, reverse temporal ordering, intervention-version mixing and reasonless human override. Every case calls production logic and exports actual evidence plus a code reference; a spreadsheet status may change to “PASS” only after the same release commit executes successfully.
 
 ### 2.4 L2 — usability and no-harm study (not yet conducted)
 
@@ -50,6 +50,8 @@ Evaluate measurement invariance, temporal calibration, institutional transportab
 ## 4. Reproduction
 
 All continuous generator fields are canonicalized to ten decimal places and CSV uses LF line endings. This does not imply ten-decimal measurement accuracy. It isolates meaningful algorithm changes from last-bit differences in operating-system math libraries and text serialization, so every supported Python/platform combination can verify the same logical and file hashes.
+
+`research/submission_release_manifest.json` is the version bridge for submission artifacts. `open-source-reference/0.2.0` is the canonical executable conformance generator. `document-design-fixture/1.0.0` is a separate Word/Excel rehearsal with a different data-generating process. Its AIPW value must not be numerically compared with the repository estimate; only each generator's within-process known-truth checks are valid.
 
 ```bash
 python -m pip install -e ".[dev,api,research]"

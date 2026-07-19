@@ -67,6 +67,7 @@ class DecisionRequest(FrozenModel):
     seed: int
     simulation_draws: int = Field(ge=100, le=100_000)
     is_synthetic: bool
+    context_conflict_threshold: float = Field(default=15.0, ge=0)
 
 
 class DecisionPackage(FrozenModel):
@@ -81,6 +82,7 @@ class DecisionPackage(FrozenModel):
     explanation: str = Field(min_length=1)
     audit_log: AgentDecisionLog
     review_ticket: ReviewTicket | None
+    context_conflict_dimensions: tuple[str, ...] = ()
 
 
 class GrowthOpsOrchestrator:
@@ -122,12 +124,19 @@ class GrowthOpsOrchestrator:
                 paths=(),
                 tasks=(),
                 gate=gate,
+                context_conflict_dimensions=(),
             )
 
-        profiles = self._build_profiles(request)
+        profiles, context_conflict_dimensions = self._build_profiles(request)
         paths = self._build_paths(request, profiles)
         tasks = self._build_tasks(request)
-        gate = self._gate(request, profiles, paths, tasks)
+        gate = self._gate(
+            request,
+            profiles,
+            paths,
+            tasks,
+            context_conflict_dimensions=context_conflict_dimensions,
+        )
         return self._finalize(
             request=request,
             input_hash=input_hash,
@@ -135,6 +144,7 @@ class GrowthOpsOrchestrator:
             paths=paths,
             tasks=tasks,
             gate=gate,
+            context_conflict_dimensions=context_conflict_dimensions,
         )
 
     def _validate_subject_scope(self, request: DecisionRequest) -> None:
@@ -146,37 +156,48 @@ class GrowthOpsOrchestrator:
             if record.authorization_id != request.consent.consent_id:
                 raise ValueError(f"evidence authorization mismatch: {record.evidence_id}")
 
-    def _build_profiles(self, request: DecisionRequest) -> tuple[ProfileSnapshot, ...]:
+    def _build_profiles(
+        self, request: DecisionRequest
+    ) -> tuple[tuple[ProfileSnapshot, ...], tuple[str, ...]]:
         contract = self.contracts["evidence"]
         contract.require(AgentCapability.READ_EVIDENCE)
         contract.require(AgentCapability.WRITE_PROFILE)
         profiles: list[ProfileSnapshot] = []
+        conflict_dimensions: list[str] = []
         for dimension, prior in sorted(request.priors.items()):
             records = tuple(
                 item for item in request.evidence_records if item.dimension == dimension
             )
             state = EvidenceStateEstimator(
                 request.decision_time, prior.half_life_days
-            ).update(prior.mean, prior.sd, records)
-            if not state.used_evidence_ids:
-                continue
-            profiles.append(
-                ProfileSnapshot(
-                    snapshot_id=f"{request.decision_id}:profile:{dimension}",
-                    subject_id=request.subject_id,
-                    dimension=dimension,
-                    posterior_mean=state.posterior_mean,
-                    posterior_sd=state.posterior_sd,
-                    interval_low=state.interval_low,
-                    interval_high=state.interval_high,
-                    evidence_ids=state.used_evidence_ids,
-                    context="context-preserving evidence update",
-                    model_version=request.model_versions["evidence"],
-                    created_at=request.decision_time,
-                    is_synthetic=request.is_synthetic,
-                )
+            ).update_by_context(
+                prior.mean,
+                prior.sd,
+                records,
+                conflict_threshold=request.context_conflict_threshold,
             )
-        return tuple(profiles)
+            if state.has_context_conflict:
+                conflict_dimensions.append(dimension)
+            for context, context_state in state.context_results.items():
+                if not context_state.used_evidence_ids:
+                    continue
+                profiles.append(
+                    ProfileSnapshot(
+                        snapshot_id=f"{request.decision_id}:profile:{dimension}:{context}",
+                        subject_id=request.subject_id,
+                        dimension=dimension,
+                        posterior_mean=context_state.posterior_mean,
+                        posterior_sd=context_state.posterior_sd,
+                        interval_low=context_state.interval_low,
+                        interval_high=context_state.interval_high,
+                        evidence_ids=context_state.used_evidence_ids,
+                        context=context,
+                        model_version=request.model_versions["evidence"],
+                        created_at=request.decision_time,
+                        is_synthetic=request.is_synthetic,
+                    )
+                )
+        return tuple(profiles), tuple(conflict_dimensions)
 
     def _build_paths(
         self, request: DecisionRequest, profiles: tuple[ProfileSnapshot, ...]
@@ -184,20 +205,38 @@ class GrowthOpsOrchestrator:
         contract = self.contracts["path"]
         contract.require(AgentCapability.READ_RULE)
         contract.require(AgentCapability.WRITE_PATH)
-        states = {
-            item.dimension: LatentDimension(mean=item.posterior_mean, sd=item.posterior_sd)
-            for item in profiles
-        }
         if not request.path_definitions:
             return ()
-        return simulate_paths(
-            states,
-            request.path_definitions,
-            request.knowledge_rules,
-            request.decision_time,
-            draws=request.simulation_draws,
-            seed=request.seed,
-        )
+        grouped: dict[str, list[ProfileSnapshot]] = {}
+        for profile in profiles:
+            grouped.setdefault(profile.context, []).append(profile)
+        results: list[PathSimulationResult] = []
+        for context, context_profiles in sorted(grouped.items()):
+            states = {
+                item.dimension: LatentDimension(
+                    mean=item.posterior_mean, sd=item.posterior_sd
+                )
+                for item in context_profiles
+            }
+            runnable = tuple(
+                definition
+                for definition in request.path_definitions
+                if set(definition.requirements) <= set(states)
+            )
+            if not runnable:
+                continue
+            simulated = simulate_paths(
+                states,
+                runnable,
+                request.knowledge_rules,
+                request.decision_time,
+                draws=request.simulation_draws,
+                seed=request.seed,
+            )
+            results.extend(
+                item.model_copy(update={"context": context}) for item in simulated
+            )
+        return tuple(results)
 
     def _build_tasks(self, request: DecisionRequest) -> tuple[TaskDecision, ...]:
         contract = self.contracts["task"]
@@ -211,6 +250,8 @@ class GrowthOpsOrchestrator:
         profiles: tuple[ProfileSnapshot, ...],
         paths: tuple[PathSimulationResult, ...],
         tasks: tuple[TaskDecision, ...],
+        *,
+        context_conflict_dimensions: tuple[str, ...],
     ) -> GateResult:
         contract = self.contracts["governance"]
         contract.require(AgentCapability.READ_RULE)
@@ -243,6 +284,7 @@ class GrowthOpsOrchestrator:
                 uncertainty_width=uncertainty_width,
                 student_workload_hours=workload,
                 is_high_stakes=request.purpose is DecisionPurpose.HIGH_STAKES,
+                context_conflict=bool(context_conflict_dimensions),
             ),
             GatePolicy(),
         )
@@ -256,6 +298,7 @@ class GrowthOpsOrchestrator:
         paths: tuple[PathSimulationResult, ...],
         tasks: tuple[TaskDecision, ...],
         gate: GateResult,
+        context_conflict_dimensions: tuple[str, ...],
     ) -> DecisionPackage:
         self.contracts["explanation"].require(AgentCapability.WRITE_EXPLANATION)
         explanation = self._explain(gate, paths, tasks)
@@ -304,6 +347,7 @@ class GrowthOpsOrchestrator:
             explanation=explanation,
             audit_log=audit_log,
             review_ticket=review_ticket,
+            context_conflict_dimensions=context_conflict_dimensions,
         )
 
     @staticmethod

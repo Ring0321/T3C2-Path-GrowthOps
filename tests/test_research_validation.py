@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from t3c2_path.red_team import run_red_team_suite
 from t3c2_path.research import (
     export_validation_bundle,
     generate_known_truth_cohort,
@@ -58,8 +59,10 @@ def test_red_team_registry_has_unique_executable_expectations() -> None:
     cases = json.loads((ROOT / "research" / "red_team_cases.json").read_text(encoding="utf-8"))
     assert len(cases) >= 12
     assert len({item["case_id"] for item in cases}) == len(cases)
-    assert all(item["expected_action"] for item in cases)
-    assert all(item["forbidden_output"] for item in cases)
+    assert [item["case_id"] for item in cases] == [f"R{i:02d}" for i in range(1, 13)]
+    assert all(item["expected_behavior"] for item in cases)
+    assert all(item["forbidden_behavior"] for item in cases)
+    assert all(item["executable_reference"].startswith("t3c2_path.red_team:") for item in cases)
 
 
 def test_validation_bundle_exports_data_report_and_manifest(tmp_path: Path) -> None:
@@ -70,3 +73,29 @@ def test_validation_bundle_exports_data_report_and_manifest(tmp_path: Path) -> N
     assert (tmp_path / "manifest.json").exists()
     report = json.loads((tmp_path / "validation_report.json").read_text(encoding="utf-8"))
     assert report["research_boundary"] == "synthetic_only_not_real_world_evidence"
+
+
+def test_submission_release_maps_every_generator_and_freezes_one_canonical_role() -> None:
+    manifest = json.loads(
+        (ROOT / "research" / "submission_release_manifest.json").read_text(encoding="utf-8")
+    )
+    committed = json.loads(
+        (ROOT / "research" / "generated" / "validation_report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["release_version"] == "1.1.0"
+    assert manifest["canonical_reproducibility_generator"] == "open-source-reference/0.2.0"
+    reference = manifest["generators"]["open-source-reference/0.2.0"]
+    assert reference["dataset_hash"] == committed["dataset_hash"]
+    assert reference["aipw_estimate"] == committed["aipw_estimate"]
+    fixture = manifest["generators"]["document-design-fixture/1.0.0"]
+    assert fixture["aipw_estimate"] != reference["aipw_estimate"]
+    assert manifest["comparison_rule"] == "DO_NOT_COMPARE_NUMERIC_ESTIMATES_ACROSS_DGP"
+
+
+def test_all_twelve_submission_red_team_cases_are_executable_and_pass() -> None:
+    results = run_red_team_suite()
+    assert [item.case_id for item in results] == [f"R{i:02d}" for i in range(1, 13)]
+    assert all(item.status == "PASS" for item in results)
+    assert all(item.test_reference and item.actual_evidence for item in results)

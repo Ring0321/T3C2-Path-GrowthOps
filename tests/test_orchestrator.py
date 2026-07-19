@@ -34,7 +34,13 @@ def consent(*, purpose: DecisionPurpose = DecisionPurpose.FORMATIVE_PLANNING) ->
     )
 
 
-def evidence(evidence_id: str, dimension: str, value: float) -> EvidenceRecord:
+def evidence(
+    evidence_id: str,
+    dimension: str,
+    value: float,
+    *,
+    context: str = "structured_task",
+) -> EvidenceRecord:
     return EvidenceRecord(
         evidence_id=evidence_id,
         subject_id="synthetic-student-001",
@@ -45,7 +51,7 @@ def evidence(evidence_id: str, dimension: str, value: float) -> EvidenceRecord:
         observed_at=NOW - timedelta(days=2),
         recorded_at=NOW,
         source_kind=SourceKind.WORK_SAMPLE,
-        context="structured_task",
+        context=context,
         authorization_id="consent-001",
         status=EvidenceStatus.ACTIVE,
         is_synthetic=True,
@@ -166,4 +172,30 @@ def test_explanation_preserves_uncertainty_and_avoids_service_causal_language() 
     result = GrowthOpsOrchestrator(AppendOnlyAuditStore()).evaluate(request())
     assert "uncertainty" in result.explanation.lower()
     assert "caused" not in result.explanation.lower()
+
+
+def test_context_conflict_is_preserved_and_forces_defer_instead_of_pooling() -> None:
+    conflicting = (
+        evidence("e-analysis-interview", "analysis", 85, context="interview"),
+        evidence("e-analysis-exam", "analysis", 35, context="timed_exam"),
+        evidence("e-communication-interview", "communication", 70, context="interview"),
+        evidence("e-communication-exam", "communication", 68, context="timed_exam"),
+    )
+    result = GrowthOpsOrchestrator(AppendOnlyAuditStore()).evaluate(
+        request(
+            evidence_records=conflicting,
+            gate_metrics=GateMetrics(
+                expected_evidence_count=4,
+                calibration_ece=0.04,
+                fairness_gap=0.05,
+            ),
+        )
+    )
+    assert result.action is PublicationAction.DEFER
+    assert result.context_conflict_dimensions == ("analysis",)
+    assert {item.context for item in result.profiles if item.dimension == "analysis"} == {
+        "interview",
+        "timed_exam",
+    }
+    assert "CONTEXT_CONFLICT_REQUIRES_DISCRIMINATING_EVIDENCE" in result.reason_codes
     assert "导致" not in result.explanation
