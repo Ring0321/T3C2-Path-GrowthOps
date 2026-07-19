@@ -30,7 +30,7 @@ Source = "https://github.com/Ring0321/T3C2-Path-GrowthOps"
 
 [project.optional-dependencies]
 api = ["fastapi>=0.139.2,<1", "uvicorn>=0.46,<1"]
-research = ["numpy>=1.26,<3", "pandas>=2.2,<3", "scipy>=1.12,<2"]
+research = ["numpy>=1.26,<3", "pandas>=2.2,<4", "scipy>=1.12,<2"]
 dev = [
   "httpx>=0.27,<1",
   "pytest>=9.1.1,<10",
